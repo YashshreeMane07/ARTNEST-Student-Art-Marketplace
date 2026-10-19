@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "ARTNEST"
+description = "A frontend-only digital art marketplace for student creators to showcase and discover artwork, connect for commissions and collaborations, and build their creative portfolios using realistic sample data."
+version = "1.0.0"
+id = "artifacts/artnest"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18210
+
+[services.development]
+run = "pnpm --filter @workspace/artnest run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/artnest", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/artnest/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18210"
+BASE_PATH = "/"
