@@ -1,0 +1,1203 @@
+ARTNEST — COMPLETE BACKEND DEVELOPMENT & FRONTEND INTEGRATION
+
+My ARTNEST frontend is already built in this Replit project.
+
+DO NOT redesign, replace, delete, or recreate my existing frontend.
+
+Your task is to inspect the existing frontend and build the complete backend required to make the application fully functional.
+
+==================================================
+1. PROJECT
+==================================================
+
+Project name: ARTNEST
+
+Tagline:
+Showcase • Collaborate • Monetize
+
+Brand statement:
+Where student creativity finds its audience.
+
+ARTNEST is a student-focused digital art marketplace where student creators can:
+
+- Create creator profiles
+- Showcase digital artwork
+- Sell artwork
+- Receive custom commissions
+- Collaborate with other creators
+- Discover other student creators
+- Build career-ready portfolios
+- Use AI assistance
+- Track views, likes, sales and engagement
+
+Buyers can:
+
+- Browse artwork
+- Search and filter artwork
+- Discover creators
+- Like artwork
+- Add artwork to wishlist
+- Add artwork to cart
+- Purchase artwork
+- Request commissions
+- Message creators
+- Leave reviews
+
+
+==================================================
+2. IMPORTANT — EXISTING FRONTEND
+==================================================
+
+FIRST inspect the entire existing ARTNEST frontend.
+
+Understand:
+
+- All pages
+- All routes
+- Components
+- Buttons
+- Forms
+- Navigation
+- Artwork cards
+- Creator profiles
+- Dashboard
+- Wishlist
+- Cart
+- Checkout
+- Messages
+- Commissions
+- Collaboration
+- Notifications
+- Settings
+- Existing mock data
+- Existing API calls, if any
+- Existing authentication UI
+- Existing state management
+
+Use the existing frontend as the source of truth.
+
+Do not create a new frontend.
+
+Do not replace the current UI.
+
+Do not change the design unless a change is absolutely necessary for backend integration.
+
+
+==================================================
+3. BACKEND STACK
+==================================================
+
+Use:
+
+Frontend:
+- Existing React frontend
+- Existing TypeScript setup
+- Existing Tailwind setup
+
+Backend:
+- Node.js
+- Express.js
+- TypeScript where appropriate
+- REST APIs
+
+Database:
+- MongoDB
+- Mongoose
+
+Authentication:
+- Firebase Authentication
+
+Image/file storage:
+- Cloudinary
+
+AI:
+- Gemini API
+
+Payments:
+- Razorpay
+
+
+IMPORTANT:
+
+Use MongoDB for the application database.
+
+Do not replace MongoDB with PostgreSQL or another database unless MongoDB genuinely cannot be connected in this Replit project.
+
+If there is a technical problem connecting MongoDB, tell me exactly what is required before changing the database technology.
+
+
+==================================================
+4. ARCHITECTURE
+==================================================
+
+Use this architecture:
+
+Existing React Frontend
+        ↓
+Node.js + Express Backend
+        ↓
+MongoDB
+
+External services:
+
+Firebase Authentication
+Cloudinary
+Gemini API
+Razorpay
+
+
+The frontend should communicate with the backend through REST APIs.
+
+Do not put secret API keys in frontend code.
+
+
+==================================================
+5. AUTHENTICATION — FIREBASE
+==================================================
+
+Use Firebase Authentication.
+
+Implement:
+
+- Sign up
+- Login
+- Logout
+- Authentication state
+- Protected routes
+- User profile
+- Password reset where applicable
+
+Roles:
+
+1. Buyer
+2. Student Creator
+3. Admin
+
+Do NOT replace Firebase Authentication with Replit Auth.
+
+Firebase handles authentication.
+
+ARTNEST backend handles application data, roles and student verification.
+
+
+==================================================
+6. STUDENT VERIFICATION
+==================================================
+
+ARTNEST is a student-focused marketplace.
+
+Create student verification.
+
+Statuses:
+
+PENDING
+VERIFIED
+REJECTED
+
+Creators can submit verification information.
+
+Admin can approve or reject verification.
+
+Verified creators should receive a verified student badge.
+
+Important:
+
+Firebase authentication does NOT automatically verify that someone is a student.
+
+Student verification must be implemented as ARTNEST backend functionality.
+
+
+==================================================
+7. MONGODB DATABASE
+==================================================
+
+Create appropriate MongoDB/Mongoose models.
+
+At minimum support:
+
+USER
+
+Fields:
+- firebaseUid
+- name
+- email
+- role
+- profileImage
+- bio
+- college
+- course
+- skills
+- verificationStatus
+- createdAt
+
+
+CREATOR PROFILE
+
+Fields:
+- userId
+- username
+- bio
+- college
+- skills
+- portfolio
+- socialLinks
+- verificationStatus
+- rating
+- totalSales
+- totalViews
+- followers
+
+
+ARTWORK
+
+Fields:
+- creatorId
+- title
+- description
+- imageUrl
+- category
+- tags
+- price
+- status
+- likes
+- views
+- createdAt
+
+
+WISHLIST
+
+Fields:
+- userId
+- artworkIds
+
+
+CART
+
+Fields:
+- userId
+- items
+- quantity
+- price
+
+
+ORDER
+
+Fields:
+- buyerId
+- creatorId
+- artworkId
+- amount
+- paymentId
+- razorpayOrderId
+- paymentStatus
+- orderStatus
+- createdAt
+
+
+REVIEW
+
+Fields:
+- buyerId
+- artworkId
+- creatorId
+- rating
+- comment
+- createdAt
+
+
+COMMISSION
+
+Fields:
+- buyerId
+- creatorId
+- title
+- description
+- referenceImage
+- budget
+- deadline
+- status
+- createdAt
+
+
+MESSAGE
+
+Fields:
+- senderId
+- receiverId
+- conversationId
+- message
+- timestamp
+- readStatus
+
+
+COLLABORATION
+
+Fields:
+- creatorIds
+- title
+- description
+- skillsRequired
+- status
+- createdAt
+
+
+FOLLOW
+
+Fields:
+- followerId
+- followingId
+
+
+NOTIFICATION
+
+Fields:
+- userId
+- type
+- title
+- message
+- read
+- createdAt
+
+
+PORTFOLIO PROJECT
+
+Fields:
+- creatorId
+- title
+- description
+- image
+- skills
+- links
+
+
+CREATOR STATS
+
+Fields:
+- creatorId
+- views
+- likes
+- sales
+- earnings
+- followers
+
+
+Modify the schema if necessary to properly support the existing frontend.
+
+
+==================================================
+8. ARTWORK CRUD
+==================================================
+
+Implement complete artwork CRUD.
+
+APIs:
+
+POST   /api/artworks
+GET    /api/artworks
+GET    /api/artworks/:id
+PUT    /api/artworks/:id
+DELETE /api/artworks/:id
+
+Support:
+
+- Create artwork
+- Edit artwork
+- Delete artwork
+- Search
+- Categories
+- Tags
+- Price filtering
+- Sorting
+- Trending
+- Newest
+- Popular
+
+
+Only the artwork owner should be able to edit/delete their artwork.
+
+
+==================================================
+9. CLOUDINARY
+==================================================
+
+Use Cloudinary for artwork image storage.
+
+Flow:
+
+Creator selects image
+        ↓
+Frontend
+        ↓
+Backend
+        ↓
+Cloudinary
+        ↓
+Image URL
+        ↓
+MongoDB
+
+Store the Cloudinary URL in MongoDB.
+
+Do not store large image files directly in MongoDB.
+
+Also support profile images where required.
+
+
+==================================================
+10. GEMINI AI
+==================================================
+
+Integrate Gemini through the backend.
+
+Never expose the Gemini API key in frontend code.
+
+For artwork upload, provide AI assistance for:
+
+- Suggested title
+- Description
+- Tags
+- Category
+- Keywords
+- Price guidance
+
+The creator must be able to review and edit AI-generated information before publishing.
+
+Do not automatically publish AI-generated content.
+
+
+Also implement practical AI-assisted artwork discovery/search if possible using:
+
+- Artwork title
+- Description
+- Tags
+- Category
+- User search query
+
+
+==================================================
+11. MARKETPLACE SEARCH & DISCOVERY
+==================================================
+
+Connect the existing Explore and Trending pages to real backend data.
+
+Search across:
+
+- Artwork title
+- Description
+- Tags
+- Category
+- Creator name
+- Creator skills
+
+Support:
+
+- Category filter
+- Price filter
+- Creator filter
+- Newest
+- Popular
+- Trending
+
+
+==================================================
+12. WISHLIST
+==================================================
+
+Implement:
+
+POST   /api/wishlist/:artworkId
+DELETE /api/wishlist/:artworkId
+GET    /api/wishlist
+
+Connect the existing wishlist buttons and page to the backend.
+
+Wishlist must persist for the authenticated user.
+
+
+==================================================
+13. CART
+==================================================
+
+Implement:
+
+- Add to cart
+- Remove from cart
+- Update quantity
+- Get cart
+- Clear cart
+
+Cart should persist for authenticated users.
+
+Connect the existing cart UI to the backend.
+
+
+==================================================
+14. RAZORPAY PAYMENTS
+==================================================
+
+Integrate Razorpay securely through the backend.
+
+Flow:
+
+Buyer clicks Buy
+        ↓
+Backend creates Razorpay order
+        ↓
+Frontend opens Razorpay checkout
+        ↓
+Payment
+        ↓
+Backend verifies payment
+        ↓
+MongoDB order created/updated
+        ↓
+Creator receives order
+
+
+Never expose Razorpay secret keys in frontend code.
+
+If live Razorpay credentials are unavailable, create a safe test/demo payment flow so the application can still be demonstrated.
+
+Do not falsely mark real payments as successful.
+
+
+==================================================
+15. ORDERS
+==================================================
+
+Implement:
+
+- Create order
+- Get buyer orders
+- Get creator orders
+- Get order details
+- Update order status
+
+Statuses:
+
+PENDING
+PAID
+PROCESSING
+COMPLETED
+CANCELLED
+REFUNDED
+
+Connect the existing order/checkout/dashboard UI.
+
+
+==================================================
+16. COMMISSIONS
+==================================================
+
+Implement complete custom commission functionality.
+
+Buyer:
+
+- View creator
+- Request commission
+- Enter requirements
+- Add budget
+- Add deadline
+- Submit request
+- Track status
+
+Creator:
+
+- Receive commission request
+- Accept
+- Reject
+- Update progress
+- Mark completed
+
+Statuses:
+
+PENDING
+ACCEPTED
+IN_PROGRESS
+COMPLETED
+REJECTED
+CANCELLED
+
+APIs:
+
+POST   /api/commissions
+GET    /api/commissions
+GET    /api/commissions/:id
+PUT    /api/commissions/:id
+DELETE /api/commissions/:id
+
+
+==================================================
+17. MESSAGING
+==================================================
+
+Implement user-to-user messaging.
+
+Users should be able to:
+
+- Start conversation
+- Send messages
+- View conversations
+- View message history
+- Mark messages as read
+
+Use REST APIs at minimum.
+
+If real-time messaging can be implemented reliably without unnecessary complexity, add it.
+
+
+==================================================
+18. COLLABORATION HUB
+==================================================
+
+Implement collaboration functionality.
+
+Creators can:
+
+- Create collaboration opportunities
+- Add title
+- Add description
+- Add required skills
+- Browse opportunities
+- Apply/contact creators
+- Manage collaboration status
+
+Example:
+
+Illustrator + UI Designer
+Animator + Music Producer
+Graphic Designer + Developer
+
+
+==================================================
+19. CREATOR PROFILES
+==================================================
+
+Connect creator profiles to real database data.
+
+Display:
+
+- Profile image
+- Name
+- College
+- Bio
+- Skills
+- Verification badge
+- Artwork
+- Portfolio
+- Followers
+- Rating
+- Sales
+- Commission availability
+
+Implement:
+
+- Follow
+- Unfollow
+- Follower count
+
+
+==================================================
+20. REVIEWS & RATINGS
+==================================================
+
+After a completed purchase, allow the buyer to:
+
+- Give rating
+- Write review
+
+Prevent duplicate reviews for the same purchase.
+
+Update creator/artwork rating information.
+
+
+==================================================
+21. CREATOR DASHBOARD
+==================================================
+
+Connect the existing creator dashboard to real data.
+
+Display:
+
+- Total artworks
+- Views
+- Likes
+- Followers
+- Sales
+- Earnings
+- Orders
+- Pending commissions
+- Completed commissions
+- Recent activity
+
+Do NOT use hardcoded statistics.
+
+Use actual MongoDB data.
+
+
+==================================================
+22. PORTFOLIO
+==================================================
+
+Creators should be able to:
+
+- Add portfolio project
+- Edit project
+- Delete project
+- Add description
+- Add skills
+- Add project image
+- Add external links
+
+Connect to the existing portfolio UI.
+
+
+==================================================
+23. NOTIFICATIONS
+==================================================
+
+Implement notifications for:
+
+- New follower
+- Artwork liked
+- Artwork purchased
+- Commission request
+- Commission accepted
+- Commission completed
+- New message
+- Collaboration request
+- Student verification approved
+- Student verification rejected
+
+Connect notifications to the existing frontend.
+
+
+==================================================
+24. ADMIN
+==================================================
+
+Create backend support for admin.
+
+Admin can:
+
+- View users
+- View creators
+- Verify students
+- Reject verification
+- View artworks
+- Remove inappropriate artwork
+- View reports
+- View orders
+- View commissions
+- View platform statistics
+
+Protect all admin endpoints with role-based authorization.
+
+
+==================================================
+25. SECURITY
+==================================================
+
+Implement:
+
+- Firebase authentication middleware
+- Authorization middleware
+- Role-based access control
+- Input validation
+- Ownership checks
+- Secure API design
+- CORS
+- Error handling
+- Environment variables
+- No hardcoded secrets
+
+Examples:
+
+A creator cannot edit another creator's artwork.
+
+A buyer cannot modify another user's order.
+
+A normal user cannot access admin APIs.
+
+Users cannot access another user's private messages or private information.
+
+
+==================================================
+26. ENVIRONMENT VARIABLES
+==================================================
+
+Create a .env.example containing the required variables.
+
+Example:
+
+MONGODB_URI=
+
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+GEMINI_API_KEY=
+
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+
+PORT=
+
+
+Do not place actual secrets into source code.
+
+Use Replit Secrets/environment variables.
+
+If a credential is missing, tell me exactly what I need to create and where to add it.
+
+
+==================================================
+27. BACKEND STRUCTURE
+==================================================
+
+Use a clean backend structure such as:
+
+server/
+├── config/
+├── controllers/
+├── middleware/
+├── models/
+├── routes/
+├── services/
+├── utils/
+├── validators/
+└── server.ts
+
+Adapt to the existing project structure if necessary.
+
+Do not unnecessarily restructure working frontend code.
+
+
+==================================================
+28. FRONTEND → BACKEND CONNECTION
+==================================================
+
+Connect the existing frontend buttons and forms to the backend.
+
+Examples:
+
+Existing Upload Artwork button
+        ↓
+POST /api/artworks
+        ↓
+Cloudinary
+        ↓
+MongoDB
+        ↓
+Artwork appears in marketplace
+
+
+Existing Wishlist button
+        ↓
+POST /api/wishlist/:artworkId
+        ↓
+MongoDB
+        ↓
+Wishlist updates
+
+
+Existing Buy button
+        ↓
+Backend
+        ↓
+Razorpay
+        ↓
+Payment verification
+        ↓
+Order stored in MongoDB
+
+
+Existing Creator Dashboard
+        ↓
+GET backend statistics
+        ↓
+Real database values
+
+
+Replace mock/static data with real API data wherever appropriate.
+
+
+==================================================
+29. LOADING & ERROR STATES
+==================================================
+
+Make sure existing frontend handles:
+
+- Loading
+- Empty states
+- API errors
+- Authentication errors
+- Upload errors
+- Payment errors
+- Network errors
+- Unauthorized access
+
+No important button should silently do nothing.
+
+
+==================================================
+30. DEMO DATA
+==================================================
+
+Create realistic fictional seed/demo data.
+
+Include:
+
+- Student creators
+- Artwork
+- Categories
+- Tags
+- Portfolio projects
+- Reviews
+- Followers
+- Example commissions
+
+Do not use real people's personal information.
+
+The application should look populated for the hackathon demonstration.
+
+
+==================================================
+31. HACKATHON DEMO FLOWS
+==================================================
+
+Make these flows work end-to-end.
+
+FLOW 1 — ARTWORK
+
+Creator
+→ Upload artwork
+→ Cloudinary
+→ Gemini AI suggestions
+→ Creator edits information
+→ Publish
+→ Artwork appears in marketplace
+
+
+FLOW 2 — PURCHASE
+
+Buyer
+→ Explore
+→ Open artwork
+→ View creator
+→ Wishlist/cart
+→ Checkout
+→ Razorpay/test payment
+→ Payment verification
+→ Order created
+→ Creator sees order
+
+
+FLOW 3 — COMMISSION
+
+Buyer
+→ Creator profile
+→ Request commission
+→ Add requirements/budget/deadline
+→ Creator receives request
+→ Creator accepts
+→ Status changes
+→ Commission completed
+
+
+FLOW 4 — COLLABORATION
+
+Creator
+→ Collaboration Hub
+→ Create opportunity
+→ Other creator discovers it
+→ Collaboration request
+→ Status updates
+
+
+FLOW 5 — CREATOR DASHBOARD
+
+Creator
+→ Dashboard
+→ Views
+→ Likes
+→ Followers
+→ Sales
+→ Earnings
+→ Orders
+→ Commissions
+
+
+==================================================
+32. IMPLEMENTATION ORDER
+==================================================
+
+Work in this order:
+
+PHASE 1
+Inspect existing frontend.
+
+PHASE 2
+Create backend architecture.
+
+PHASE 3
+Connect MongoDB.
+
+PHASE 4
+Connect Firebase Authentication.
+
+PHASE 5
+Implement users, roles and student verification.
+
+PHASE 6
+Implement artwork CRUD.
+
+PHASE 7
+Connect Cloudinary.
+
+PHASE 8
+Implement marketplace search/filtering.
+
+PHASE 9
+Implement wishlist and cart.
+
+PHASE 10
+Implement orders and Razorpay.
+
+PHASE 11
+Implement commissions.
+
+PHASE 12
+Implement messaging.
+
+PHASE 13
+Implement collaboration.
+
+PHASE 14
+Implement Gemini AI.
+
+PHASE 15
+Implement creator dashboard and analytics.
+
+PHASE 16
+Implement notifications, reviews and following.
+
+PHASE 17
+Implement admin functionality.
+
+PHASE 18
+Test everything end-to-end.
+
+
+==================================================
+33. TESTING
+==================================================
+
+Before declaring the project complete, test:
+
+- Registration
+- Login
+- Logout
+- Protected routes
+- Student verification
+- Artwork upload
+- Artwork editing
+- Artwork deletion
+- Cloudinary upload
+- Search
+- Filtering
+- Likes
+- Wishlist
+- Cart
+- Checkout
+- Payment/test payment
+- Orders
+- Reviews
+- Creator profiles
+- Following
+- Commissions
+- Messaging
+- Collaboration
+- Notifications
+- Gemini AI
+- Creator dashboard
+- Admin dashboard
+- Authorization
+- Error handling
+
+Check browser console errors.
+
+Check backend logs.
+
+Fix errors instead of simply reporting them.
+
+
+==================================================
+34. IMPORTANT SERVICE SETUP RULE
+==================================================
+
+Before implementing any external service that requires credentials, tell me:
+
+1. Which account/service I need
+2. Where to create it
+3. Which credential is required
+4. The exact environment variable name
+5. Where to add it in Replit Secrets
+
+Do not invent credentials.
+
+Do not hardcode credentials.
+
+Do not ask me to paste secret keys into source code.
+
+
+==================================================
+35. DO NOT OVERENGINEER
+==================================================
+
+This is a hackathon project.
+
+Prioritize:
+
+1. Working features
+2. Reliable backend
+3. Existing frontend integration
+4. Good demo experience
+5. Security
+6. Clean code
+
+Do not introduce unnecessary microservices or complicated infrastructure.
+
+
+==================================================
+36. FINAL REQUIREMENT
+==================================================
+
+At the end, provide:
+
+1. What was implemented
+2. MongoDB setup instructions
+3. Firebase setup instructions
+4. Cloudinary setup instructions
+5. Gemini setup instructions
+6. Razorpay setup instructions
+7. Required Replit Secrets
+8. How to run the project
+9. Demo credentials if applicable
+10. Any unfinished features and why
+
+MOST IMPORTANT:
+
+My frontend is already built.
+
+Do not replace it.
+
+Do not redesign it.
+
+Build the backend around my existing ARTNEST frontend and make the existing application actually work end-to-end.
+
+Start by inspecting the current project and give me a short implementation plan. Then begin implementing the backend.
