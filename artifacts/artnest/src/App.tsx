@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -8,10 +8,13 @@ import {
   ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, Award, Bell, Bookmark, BriefcaseBusiness, Check, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Clock3, Compass, Copy, CreditCard, Download, ExternalLink, Eye, FileText, Filter, Flame, Heart, ImagePlus, LayoutDashboard, Link2, Mail, MessageCircle, MessageSquare, MoreHorizontal, PackageCheck, Palette, Plus, Search, Send, Settings, Share2, ShoppingBag, ShoppingCart, Sparkles, Star, TrendingUp, UploadCloud, Users, X, Instagram, Linkedin, Github,
 } from 'lucide-react';
 import NotFound from '@/pages/not-found';
+import { apiRequest, jsonBody } from '@/lib/api';
+import { AuthProvider, useAuth } from '@/lib/auth';
+import { ForgotPasswordPage, ProtectedPage, SignInPage, SignUpPage } from '@/pages/auth';
+import { DataContext, useApp, type Art, type Creator, type AppState } from '@/lib/artnest-state';
+import { BackendAdmin, BackendCart, BackendCheckout, BackendCollaborate, BackendCommissions, BackendDashboard, BackendMessages, BackendNotifications, BackendOrderSuccess, BackendPortfolio, BackendSettings, BackendUpload, ArtworkDetailWithReviews } from '@/pages/backend';
 
 const queryClient = new QueryClient();
-type Creator = {id:string;name:string;initials:string;college:string;location:string;bio:string;followers:number;works:number;rating:number;skills:string[];};
-type Art = {id:string;title:string;creatorId:string;category:string;style:string;price:number;likes:number;saves:number;views:number;rating:number;image:string;description:string;tags:string[];rank?:number;created:number;};
 const creators: Creator[] = [
  {id:'riya',name:'Riya Mehta',initials:'RM',college:'Srishti Manipal Institute',location:'Bengaluru, India',bio:'I build little worlds from city lights, rainy evenings and the things we almost miss.',followers:2480,works:18,rating:4.9,skills:['Digital painting','Illustration','Concept art','Photoshop']},
  {id:'arjun',name:'Arjun Nair',initials:'AN',college:'MIT Institute of Design',location:'Pune, India',bio:'Character illustrator finding the strange and tender in the everyday.',followers:1820,works:14,rating:4.8,skills:['Character design','Anime','Procreate','Storyboarding']},
@@ -34,9 +37,6 @@ const artSeed: Art[] = [
 ];
 const creatorOf=(id:string)=>creators.find(c=>c.id===id)||creators[0];
 const readStore=<T,>(key:string,fallback:T):T=>{try{const value=localStorage.getItem(key);return value?JSON.parse(value) as T:fallback}catch{return fallback}};
-type AppState={arts:Art[];wishlist:string[];cart:string[];liked:string[];following:string[];toast:(s:string)=>void;toggleSave:(id:string)=>void;toggleLike:(id:string)=>void;addCart:(id:string)=>void;publishArt:(art:Art)=>void;toggleFollow:(id:string)=>void;};
-const DataContext=createContext<AppState | null>(null);
-const useApp=()=>{const ctx=useContext(DataContext);if(!ctx)throw new Error('App data unavailable');return ctx;};
 function useNotice(){const {toast}=useApp();return toast;}
 function Verified(){return <span className="verified" title="Student identity verified"><Check size={11}/> Verified student</span>}
 function Avatar({creator,size=''}:{creator:Creator;size?:string}){return <span className={`avatar ${size}`}>{creator.initials}</span>}
@@ -50,7 +50,8 @@ const navMain=[['Home','/home'],['Explore','/explore'],['Trending','/trending'],
 const navUtility=[['Creator dashboard','/dashboard'],['Upload artwork','/upload'],['Portfolio builder','/portfolio'],['Leaderboard','/leaderboard'],['Cart','/cart'],['Settings','/settings']];
 function Navigation(){const [path]=useLocation();const [more,setMore]=useState(false);const {wishlist,cart}=useApp();return <><header className="topbar"><Link href="/home" className="brand" data-testid="link-brand"><span className="brand-mark"><Palette size={16}/></span>ARTNEST</Link><nav className="navlinks">{navMain.map(([n,p])=><Link key={p} href={p} className={path===p?'active':''} data-testid={`nav-${n.toLowerCase()}`}>{n}</Link>)}<button onClick={()=>setMore(v=>!v)} className={`icon-link ${more?'active':''}`} style={{fontSize:11,display:'flex',gap:4}}>More <ChevronDown size={13}/></button>{more&&<div style={{position:'absolute',top:59,left:'57%',zIndex:50,width:190,padding:8,border:'1px solid #ffffff1c',background:'#151419',borderRadius:12,boxShadow:'0 12px 30px #0009'}}>{[...navUtility,['Messages','/messages'],['Saved artwork','/wishlist'],['Notifications','/notifications']].map(([n,p])=><Link key={p} href={p} onClick={()=>setMore(false)} style={{display:'block',padding:'10px 11px',fontSize:11,color:'#c6c2cc'}}>{n}</Link>)}</div>}</nav><div className="navright"><SearchIconLink/><Link className="icon-link" href="/wishlist" aria-label="Wishlist" data-testid="link-wishlist"><Heart size={17}/>{wishlist.length>0&&<span className="pill-count">{wishlist.length}</span>}</Link><Link className="icon-link" href="/messages" aria-label="Messages" data-testid="link-messages"><MessageCircle size={17}/></Link><Link className="icon-link" href="/notifications" aria-label="Notifications" data-testid="link-notifications"><Bell size={17}/><span className="pill-count">3</span></Link><Link className="icon-link" href="/cart" aria-label="Cart" data-testid="link-cart"><ShoppingBag size={17}/>{cart.length>0&&<span className="pill-count">{cart.length}</span>}</Link><Link href="/dashboard" aria-label="Creator dashboard" data-testid="link-dashboard-avatar"><span className="user-chip">RM</span></Link></div></header><nav className="mobile-nav" aria-label="Mobile navigation">{[['Home','/home',Compass],['Explore','/explore',Search],['Create','/upload',Plus],['Messages','/messages',MessageCircle],['Profile','/dashboard',Users]].map(([n,p,Icon]:any)=><Link key={p} href={p} className={path===p?'active':''} data-testid={`mobile-${n.toLowerCase()}`}><Icon/><span>{n}</span></Link>)}</nav></>}
 function Footer(){const socials=[['Instagram',Instagram,'/home#instagram'],['LinkedIn',Linkedin,'/portfolio'],['GitHub',Github,'/settings'] ] as const;return <footer className="footer"><div><span className="brand"><span className="brand-mark"><Palette size={14}/></span>ARTNEST</span><div style={{marginTop:8}}>Showcase • Collaborate • Monetize</div><div className="footer-socials">{socials.map(([label,Icon,href])=><Link key={label} href={href} aria-label={label} title={`${label} · demo destination`}><Icon size={15}/></Link>)}</div></div><div className="footer-links">{[...navMain,...navUtility,['Messages','/messages'],['Saved','/wishlist'],['Notifications','/notifications'],['About','/home'],['Help','/messages'],['Terms','/settings'],['Privacy','/settings']].map(([n,p])=><Link key={n+p} href={p}>{n}</Link>)}</div><span>© 2025 ARTNEST · Built for student makers</span></footer>}
-function AppShell({children}:{children:ReactNode}){const [intro,setIntro]=useState(()=>!localStorage.getItem('artnest-intro'));useEffect(()=>{if(intro){const id=window.setTimeout(()=>{localStorage.setItem('artnest-intro','seen');setIntro(false)},2200);return()=>clearTimeout(id)}return undefined},[intro]);return <div className="shell"><Navigation/><main className="page">{children}</main><Footer/>{intro&&<div className="launch" aria-label="ARTNEST introduction"><div className="launch-inner"><div className="launch-logo"><Palette size={30}/></div><h1>ARTNEST</h1><p>Showcase • Collaborate • Monetize</p><p style={{fontSize:10,marginTop:24}}>A creative marketplace built for student creators.</p></div></div>}</div>}
+function AuthControls(){const auth=useAuth();if(auth.loading)return <div className="account-strip"><span className="micro">Checking account…</span></div>;return <div className="account-strip">{auth.session?<><span className="micro">{auth.profile?.name||auth.session.displayName||auth.session.email}</span>{auth.profile?.role==='admin'&&<Link href="/admin" className="account-link">Admin</Link>}<button className="account-link account-button" onClick={auth.signOut}>Sign out</button></>:<><Link href="/login" className="account-link">Sign in</Link><Link href="/signup" className="btn primary small">Create account</Link></>}</div>}
+function AppShell({children}:{children:ReactNode}){const {apiError,refreshArts}=useApp();const [intro,setIntro]=useState(()=>!localStorage.getItem('artnest-intro'));useEffect(()=>{if(intro){const id=window.setTimeout(()=>{localStorage.setItem('artnest-intro','seen');setIntro(false)},2200);return()=>clearTimeout(id)}return undefined},[intro]);return <div className="shell"><Navigation/><AuthControls/><main className="page">{apiError&&<div className="api-banner" role="alert"><span>{apiError}</span><button className="account-link" onClick={()=>void refreshArts()}>Retry</button></div>}{children}</main><Footer/>{intro&&<div className="launch" aria-label="ARTNEST introduction"><div className="launch-inner"><div className="launch-logo"><Palette size={30}/></div><h1>ARTNEST</h1><p>Showcase • Collaborate • Monetize</p><p style={{fontSize:10,marginTop:24}}>A creative marketplace built for student creators.</p></div></div>}</div>}
 function Home(){const {arts}=useApp();return <><section className="hero"><div className="hero-copy"><div className="eyebrow">A place for the next generation of art</div><h1>Where student creativity <span>finds its audience.</span></h1><p className="subhead">Discover original digital art created by student artists around the world. Find your next favourite, or let your work find its people.</p><div className="hero-actions"><Link href="/explore" className="btn primary">Explore artwork <ArrowRight size={15}/></Link><Link href="/upload" className="btn ghost">Start creating <ArrowUpRight size={14}/></Link></div><div className="hero-note"><span className="verified"><Check size={11}/> Student-first</span><span><strong>2,400+</strong> emerging creators</span><span><strong>18k+</strong> original works</span></div></div><div className="hero-art"><div className="hero-shot main"><img src="/art-neon-mumbai.jpg" alt="Neon Mumbai artwork"/></div><div className="hero-shot left"><img src="/art-monsoon.jpg" alt="Monsoon Dreams artwork"/></div><div className="hero-shot right"><img src="/art-cyberpunk.jpg" alt="Cyberpunk Girl artwork"/></div><div className="hero-caption"><b>Neon Mumbai</b><small>Riya Mehta · Srishti Manipal</small></div></div></section><section className="section"><div className="section-head"><div><div className="eyebrow">A little something to start with</div><h2 className="section-title">Trending this week</h2></div><Link href="/trending" className="micro">See the full list <ArrowRight size={12}/></Link></div><div className="banner-row">{[['Student spotlight','Meet this week’s rising creators','/creators','/art-cyberpunk.jpg'],['Fresh drops','Just finished. Just published.','/explore','/art-bloom.jpg'],['Commission week','Make your idea a real thing.','/commissions','/art-monsoon.jpg'],['Campus creators','Find your people, wherever they are.','/collaborate','/art-neon-mumbai.jpg']].map(([h,p,href,img])=><Link href={href} className="promo" key={h}><img src={img}/><div className="promo-text"><strong>{h}</strong><p>{p}</p></div></Link>)}</div></section><section className="section"><div className="section-head"><div><div className="eyebrow">Made on campus, made to be seen</div><h2 className="section-title">The week’s most loved</h2></div><Link href="/explore" className="micro">Explore all <ArrowRight size={12}/></Link></div><ArtGrid items={arts.slice(0,4)}/></section><section className="section panel" style={{display:'grid',gridTemplateColumns:'1fr auto',alignItems:'center',gap:20,padding:'28px 30px'}}><div><div className="eyebrow">Your next chapter starts here</div><h2 className="section-title" style={{marginTop:10}}>Make room for your work.</h2><p className="subhead" style={{fontSize:12}}>Build a portfolio, find collaborators, and turn the pieces you care about into a practice.</p></div><Link href="/portfolio" className="btn primary">Build your portfolio <ArrowUpRight size={14}/></Link></section><section className="section"><div className="section-head"><div><div className="eyebrow">People worth following</div><h2 className="section-title">Meet the makers</h2></div><Link href="/creators" className="micro">Find your people <ArrowRight size={12}/></Link></div><div className="creator-grid">{creators.slice(0,3).map(c=><CreatorCard key={c.id} creator={c}/>)}</div></section></>}
 function Explore(){const {arts}=useApp();const [query,setQuery]=useState('');const [category,setCategory]=useState('All');const [style,setStyle]=useState('All');const [sort,setSort]=useState('Trending');const [verified,setVerified]=useState(false);const categories=['All','Illustration','Digital Painting','Graphic Design','Animation','3D Art','Photography','Posters','UI/UX'];const styles=['All','Anime','Minimal','Abstract','Cyberpunk','Realistic','Cartoon','Traditional','3D'];const results=useMemo(()=>{let out=arts.filter(a=>(category==='All'||a.category===category)&&(style==='All'||a.style===style)&&(!verified||['riya','arjun','mira'].includes(a.creatorId))&&(`${a.title} ${creatorOf(a.creatorId).name} ${a.style} ${a.category} ${a.tags.join(' ')}`.toLowerCase().includes(query.toLowerCase())));if(sort==='Newest')out=[...out].sort((a,b)=>b.created-a.created);if(sort==='Most liked')out=[...out].sort((a,b)=>b.likes-a.likes);if(sort==='Price: low to high')out=[...out].sort((a,b)=>a.price-b.price);if(sort==='Price: high to low')out=[...out].sort((a,b)=>b.price-a.price);return out},[arts,category,style,verified,query,sort]);return <><PageHeader eyebrow="The marketplace" title="Explore artwork" description="Original work from student artists. Find something that feels like you."/><div className="page-toolbar"><div className="searchbox"><Search size={15}/><input className="input" placeholder="Search artwork, creators, styles..." value={query} onChange={e=>setQuery(e.target.value)} data-testid="input-search-art"/></div><select className="select" value={sort} onChange={e=>setSort(e.target.value)} aria-label="Sort artwork" data-testid="select-sort"><option>Trending</option><option>Newest</option><option>Most liked</option><option>Price: low to high</option><option>Price: high to low</option></select><Button className="small" onClick={()=>{setCategory('All');setStyle('All');setVerified(false);setQuery('')}}><Filter size={13}/> Reset</Button></div><div className="explore-layout"><aside className="filterbox"><div className="filter-group"><h4>Category</h4>{categories.map(v=><label className="filter-option" key={v}><input type="radio" name="category" checked={category===v} onChange={()=>setCategory(v)}/>{v}</label>)}</div><div className="filter-group"><h4>Style</h4>{styles.map(v=><label className="filter-option" key={v}><input type="radio" name="style" checked={style===v} onChange={()=>setStyle(v)}/>{v}</label>)}</div><div className="filter-group"><h4>Creator</h4><label className="filter-option"><input type="checkbox" checked={verified} onChange={e=>setVerified(e.target.checked)}/> Verified students</label></div></aside><div><p className="micro" style={{margin:'0 0 17px'}}>{results.length} works to explore</p><ArtGrid items={results}/></div></div></>}
 function Trending(){const {arts}=useApp();return <><PageHeader eyebrow="The community decides" title="Trending now" description="The art getting saved, shared and talked about this week." action={<span className="badge"><Flame size={12}/> Updated this week</span>}/><div className="panel" style={{marginBottom:25,display:'flex',gap:14,alignItems:'center'}}><div className="brand-mark"><TrendingUp size={17}/></div><div><b style={{fontSize:12}}>Rising on ARTNEST</b><div className="micro" style={{marginTop:4}}>A live-feeling pulse from likes, saves, views and student sales.</div></div></div><div className="art-grid">{arts.slice().sort((a,b)=>(a.rank||99)-(b.rank||99)).map((a,i)=><ArtCard key={a.id} art={a} rank={i+1}/>)}</div><section className="section"><div className="section-head"><div><div className="eyebrow">The people behind the work</div><h2 className="section-title">Creators on the rise</h2></div><Link href="/leaderboard" className="micro">Leaderboard <ArrowRight size={12}/></Link></div><div className="creator-grid">{creators.slice(0,3).map(c=><CreatorCard key={c.id} creator={c}/>)}</div></section></>}
@@ -93,6 +94,178 @@ function DashboardComplete(){const {arts}=useApp();return <><PageHeader eyebrow=
 function UploadComplete(){const {publishArt}=useApp();const notice=useNotice();const [,setLoc]=useLocation();const draft=readStore<{title?:string;description?:string;category?:string;style?:string;price?:string|number;tags?:string;image?:string}>('artnest-draft',{});const [title,setTitle]=useState(draft.title||'');const [description,setDescription]=useState(draft.description||'');const [category,setCategory]=useState(draft.category||'Illustration');const [style,setStyle]=useState(draft.style||'Digital painting');const [price,setPrice]=useState(String(draft.price||999));const [tags,setTags]=useState(draft.tags||'DigitalArt, Illustration');const [image,setImage]=useState(draft.image||'/art-bloom.jpg');const onFile=(file?:File)=>{if(file&&file.type.startsWith('image/')){const reader=new FileReader();reader.onload=()=>setImage(String(reader.result));reader.readAsDataURL(file)}};const publish=(doPublish:boolean)=>{if(!title.trim()){notice('Add a title before publishing.');return}const data={title,description,category,style,price,tags,image};if(!doPublish){localStorage.setItem('artnest-draft',JSON.stringify(data));notice('Draft saved. Pick it up whenever you’re ready.');return}const art:Art={id:`work-${Date.now()}`,title,creatorId:'riya',category,style,price:Number(price)||999,likes:0,saves:0,views:0,rating:0,image,description:description||'A new work by Riya Mehta.',tags:tags.split(',').map(t=>t.trim()).filter(Boolean),created:Date.now()};publishArt(art);localStorage.removeItem('artnest-draft');notice('Your artwork is live in the marketplace.');setLoc(`/artwork/${art.id}`)};return <><PageHeader eyebrow="Make something seen" title="Showcase your next creation." description="Every great portfolio begins with one piece you believe in."/><div className="upload-layout"><section className="panel"><label className="field-label">Artwork file</label><label className="panel upload-dropzone" onDragOver={e=>{e.preventDefault();e.currentTarget.classList.add('drag-over')}} onDragLeave={e=>e.currentTarget.classList.remove('drag-over')} onDrop={e=>{e.preventDefault();e.currentTarget.classList.remove('drag-over');onFile(e.dataTransfer.files?.[0])}}><input type="file" accept="image/*" onChange={e=>onFile(e.target.files?.[0])} data-testid="input-artwork-file"/>{image&&<img src={image} alt="Selected artwork preview" className="upload-preview"/>}<div className="upload-prompt"><UploadCloud size={25}/><p>Drop your artwork here</p><span className="micro">or choose a file · PNG, JPG up to 20 MB</span></div></label><div className="form-grid" style={{marginTop:19}}><div className="field span-two"><label className="field-label">Artwork title</label><input className="input" placeholder="Give it a name" value={title} onChange={e=>setTitle(e.target.value)} data-testid="input-art-title"/></div><div className="field span-two"><label className="field-label">A little about this piece</label><textarea className="textarea" placeholder="What should someone know about your work?" value={description} onChange={e=>setDescription(e.target.value)}/></div><div className="field"><label className="field-label">Category</label><select className="select" style={{width:'100%'}} value={category} onChange={e=>setCategory(e.target.value)}>{['Illustration','Digital Painting','Graphic Design','Animation','3D Art','Photography','Posters','UI/UX'].map(x=><option key={x}>{x}</option>)}</select></div><div className="field"><label className="field-label">Style</label><select className="select" style={{width:'100%'}} value={style} onChange={e=>setStyle(e.target.value)}>{['Digital painting','Anime','Minimal','Abstract','Cyberpunk','Realistic','3D'].map(x=><option key={x}>{x}</option>)}</select></div><div className="field"><label className="field-label">Price (INR)</label><input className="input" type="number" value={price} onChange={e=>setPrice(e.target.value)}/></div><div className="field"><label className="field-label">Tags</label><input className="input" value={tags} onChange={e=>setTags(e.target.value)}/></div></div><div style={{display:'flex',gap:9,marginTop:22}}><Button onClick={()=>publish(false)}><FileText size={14}/> Save draft</Button><Button variant="primary" onClick={()=>publish(true)}><UploadCloud size={14}/> Publish artwork</Button></div></section><aside><div className="panel"><div className="eyebrow">Your listing preview</div><h3 style={{font:'600 19px var(--app-font-serif)',margin:'9px 0 15px'}}>On the marketplace</h3><div className="art-image-wrap"><img src={image} className="art-image" alt="Marketplace preview"/></div><div className="art-meta"><div className="art-line"><strong>{title||'Your artwork title'}</strong><span className="price">₹{Number(price||999).toLocaleString('en-IN')}</span></div><div className="creator-line"><Avatar creator={creators[0]}/>Riya Mehta <Verified/></div><span className="chip">{category}</span><span className="chip">{style}</span></div></div><div className="panel" style={{marginTop:14}}><div className="eyebrow">Fair price guide</div><h3 style={{fontSize:15,margin:'8px 0'}}>Suggested ₹850 – ₹1,200</h3><p className="micro">Recommended starting price: ₹999. Based on category, complexity, creator experience and similar work.</p><Button variant="primary" className="small" style={{width:'100%',marginTop:12}} onClick={()=>setPrice('999')}>Use ₹999</Button></div></aside></div></>}
 function PortfolioComplete(){const {arts}=useApp();const [generated,setGenerated]=useState(false);const [active,setActive]=useState('Portfolio PDF');const [copied,setCopied]=useState(false);const notice=useNotice();const exportText=active==='Resume project section'?'Created Neon Mumbai, a digital painting exploring Mumbai after dark through colour, light and atmosphere. Tools: Procreate, Photoshop.':'Riya Mehta · Student digital artist · Selected work on ARTNEST';const copy=async()=>{try{await navigator.clipboard.writeText(exportText);setCopied(true);notice('Portfolio details copied.')}catch{notice('Portfolio details are ready to share.')}};return <><PageHeader eyebrow="Your work, with a point of view" title="Build your portfolio." description="Turn your best work into a story that moves with you — from studio crit to first opportunity." action={<Button variant="primary" onClick={()=>{setGenerated(true);notice('Your portfolio preview is ready.')}}><Sparkles size={14}/> Generate portfolio</Button>}/><div className="portfolio-layout"><div className="portfolio-sheet"><div style={{display:'flex',justifyContent:'space-between'}}><span className="eyebrow" style={{color:'#7c5eaa'}}>ARTNEST · SELECTED WORK</span><span style={{fontSize:9,color:'#777'}}>2024—25</span></div><div style={{marginTop:30}}><h2>Riya Mehta</h2><p>Digital artist · Srishti Manipal Institute<br/>Bengaluru, India</p><div style={{height:1,background:'#d9d4df',margin:'20px 0'}}/><b style={{fontSize:11}}>Selected work</b><div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginTop:11}}>{arts.slice(0,3).map(a=><div key={a.id}><img src={a.image} style={{width:'100%',height:105,objectFit:'cover',borderRadius:5}}/><small>{a.title}</small></div>)}</div><div style={{display:'flex',gap:6,marginTop:15}}>{creators[0].skills.slice(0,3).map(s=><span className="chip" key={s}>{s}</span>)}</div><p>About · Student artist exploring imagined cities and the quiet details of everyday life.<br/>Achievements · Rising Creator · Trending Artist · Top Rated<br/>Contact · Available for thoughtful collaborations.</p></div>{generated&&<div style={{marginTop:20,color:'#4a3769',fontSize:10,fontWeight:700}}>PORTFOLIO GENERATED · PREVIEW READY</div>}</div><div className="panel"><div className="eyebrow">Choose an export</div><div className="tabs export-tabs">{['Portfolio PDF','Resume project section','LinkedIn portfolio'].map(t=><button key={t} className={`tab ${active===t?'active':''}`} onClick={()=>setActive(t)}>{t}<ChevronRight size={13}/></button>)}</div><div className="divider"/><h3 style={{fontSize:14}}>{active}</h3><p className="micro" style={{lineHeight:1.7}}>{active==='Portfolio PDF'?'A considered, image-led snapshot, ready to save as PDF from your browser.':active==='Resume project section'?'Selected pieces translated into clear, resume-ready project descriptions.':'A polished project summary for sharing with your professional network.'}</p><div className="panel" style={{background:'rgba(0,0,0,.2)',fontSize:10,lineHeight:1.7,color:'#c0bbc8'}}>{exportText}</div><div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:14}}><Button variant="primary" className="small" onClick={()=>{setGenerated(true);notice(`${active} preview generated.`)}}><Sparkles size={12}/> Generate</Button><Button className="small" onClick={()=>{setGenerated(true);notice(`${active} preview is ready.`)}}>Preview</Button><Button className="small" onClick={copy}><Copy size={12}/>{copied?'Copied':'Copy'}</Button>{active==='Portfolio PDF'&&<Button className="small" onClick={()=>window.print()}><Download size={12}/> Download / Save as PDF</Button>}<Button className="small" onClick={()=>notice('Share preview link copied: artnest.local/riya-portfolio')}><Share2 size={12}/> Share</Button></div></div></div><section className="section"><div className="eyebrow">A living body of work</div><h2 className="section-title" style={{margin:'8px 0 18px'}}>What makes a portfolio yours.</h2><div className="creator-grid">{[['About','A short introduction, in your own voice.'],['Skills','The tools and instincts you bring to a brief.'],['Selected work','A few pieces with room to breathe.'],['Achievements','Milestones earned along the way.'],['Experience','The work you’ve done with other people.'],['Contact','An easy way for the next idea to find you.']].map(([a,b])=><div className="panel" key={a}><div className="eyebrow">{a}</div><p className="micro">{b}</p><span className="badge"><Check size={10}/> Included</span></div>)}</div></section><section className="pdf-sheet"><span>ARTNEST · SELECTED WORK</span><h1>Riya Mehta</h1><p>Digital artist · Srishti Manipal Institute · Bengaluru, India</p><p>Student artist exploring imagined cities and the quiet details of everyday life.</p><h2>Selected work</h2><div className="pdf-art">{arts.slice(0,3).map(a=><div key={a.id}><img src={a.image} alt=""/><b>{a.title}</b><p>{a.category} · ₹{a.price}</p></div>)}</div><h3>Skills</h3><p>{creators[0].skills.join(' · ')}</p><h3>Achievements & contact</h3><p>Rising Creator · Trending Artist · Available for thoughtful collaborations.</p></section></>}
 function LeaderboardComplete(){const [period,setPeriod]=useState('Weekly');const ranking=[['Kavya Rao','National Institute of Design','3,200','₹42.8k','4,820','KR','kavya'],['Riya Mehta','Srishti Manipal Institute','2,480','₹31.4k','3,960','RM','riya'],['Arjun Nair','MIT Institute of Design','1,820','₹26.2k','3,120','AN','arjun'],['Dev Malhotra','Pearl Academy','1,670','₹19.7k','2,780','DM','dev'],['Ishan Shah','IDC School of Design','1,120','₹14.3k','2,190','IS','ishan'],['Mira Thomas','Srishti Manipal Institute','940','₹12.8k','1,940','MT','mira']];return <><PageHeader eyebrow="A little recognition goes a long way" title="Creator leaderboard" description="Celebrating the students making work that people want to spend time with."/><div className="tabs">{['Weekly','Monthly','All time'].map(p=><button className={`tab ${period===p?'active':''}`} onClick={()=>setPeriod(p)} key={p}>{p}</button>)}</div><div className="panel" style={{padding:8}}>{ranking.map((r,i)=><div className="leader" key={r[0]}><span className="ranknum">{String(i+1).padStart(2,'0')}</span><Link href={`/creator/${r[6]}`} className="leader-person"><span className="avatar">{r[5]}</span><span><b>{r[0]}</b><small>{r[1]}</small></span><Verified/></Link><span className="micro">{r[2]} followers</span><span className="micro">{r[3]} sales</span><span className="badge">{r[4]} pts</span></div>)}</div><section className="section panel" style={{display:'flex',alignItems:'center',gap:18}}><Award size={30} color="#c2a5ff"/><div><b style={{fontSize:13}}>Good work travels.</b><p className="micro">Weekly score blends community engagement, sales and thoughtful participation.</p></div><Link href="/upload" className="btn primary" style={{marginLeft:'auto'}}>Share your work <ArrowRight size={12}/></Link></section></>}
-function RouteSet(){return <AppShell><Switch><Route path="/" component={HomeWithRecommendations}/><Route path="/home" component={HomeWithRecommendations}/><Route path="/explore" component={ExploreComplete}/><Route path="/trending" component={Trending}/><Route path="/creators" component={CreatorsComplete}/><Route path="/creator/:id" component={CreatorProfile}/><Route path="/artwork/:id" component={ArtworkDetail}/><Route path="/upload" component={UploadComplete}/><Route path="/dashboard" component={DashboardComplete}/><Route path="/commissions" component={Commissions}/><Route path="/collaborate" component={Collaborate}/><Route path="/messages" component={Messages}/><Route path="/wishlist" component={Wishlist}/><Route path="/cart" component={Cart}/><Route path="/checkout" component={Checkout}/><Route path="/order-success" component={OrderSuccess}/><Route path="/portfolio" component={PortfolioComplete}/><Route path="/leaderboard" component={LeaderboardComplete}/><Route path="/notifications" component={Notifications}/><Route path="/settings" component={SettingsPage}/><Route component={NotFoundPage}/></Switch></AppShell>}
-function App(){const [arts,setArts]=useState<Art[]>(()=>readStore('artnest-artworks',artSeed));const [wishlist,setWishlist]=useState<string[]>(()=>readStore('artnest-wishlist',['monsoon-dreams']));const [cart,setCart]=useState<string[]>(()=>readStore('artnest-cart',[]));const [liked,setLiked]=useState<string[]>(()=>readStore('artnest-liked',[]));const [following,setFollowing]=useState<string[]>(()=>readStore('artnest-following',['mira']));const [toastText,setToastText]=useState('');useEffect(()=>{localStorage.setItem('artnest-artworks',JSON.stringify(arts))},[arts]);useEffect(()=>{localStorage.setItem('artnest-wishlist',JSON.stringify(wishlist))},[wishlist]);useEffect(()=>{localStorage.setItem('artnest-cart',JSON.stringify(cart))},[cart]);useEffect(()=>{localStorage.setItem('artnest-liked',JSON.stringify(liked))},[liked]);useEffect(()=>{localStorage.setItem('artnest-following',JSON.stringify(following))},[following]);useEffect(()=>{const refresh=()=>setCart(readStore('artnest-cart',[]));window.addEventListener('artnest-cart-refresh',refresh);return()=>window.removeEventListener('artnest-cart-refresh',refresh)},[]);const toast=(s:string)=>{setToastText(s);window.setTimeout(()=>setToastText(''),2600)};const toggleSave=(id:string)=>{setWishlist(prev=>{const exists=prev.includes(id);toast(exists?'Removed from saved artwork':'Saved to your wishlist');return exists?prev.filter(x=>x!==id):[...prev,id]})};const toggleLike=(id:string)=>{setLiked(prev=>{const exists=prev.includes(id);toast(exists?'Like removed':'You liked this artwork');return exists?prev.filter(x=>x!==id):[...prev,id]})};const addCart=(id:string)=>{setCart(prev=>{if(prev.includes(id)){toast('This piece is already in your cart.');return prev}toast('Added to your cart.');return [...prev,id]})};const publishArt=(art:Art)=>setArts(prev=>[art,...prev]);const toggleFollow=(id:string)=>setFollowing(prev=>{const exists=prev.includes(id);toast(exists?'Creator unfollowed':'You are now following this creator');return exists?prev.filter(x=>x!==id):[...prev,id]});const value:AppState={arts,wishlist,cart,liked,following,toast,toggleSave,toggleLike,addCart,publishArt,toggleFollow};return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/,'')}><DataContext.Provider value={value}><ErrorBoundary><RouteSet/></ErrorBoundary>{toastText&&<div className="toast" role="status" data-testid="status-toast">{toastText}</div>}</DataContext.Provider></WouterRouter><Toaster/></TooltipProvider></QueryClientProvider>}
+function RouteSet(){
+  return <AppShell><Switch>
+    <Route path="/" component={HomeWithRecommendations}/><Route path="/home" component={HomeWithRecommendations}/>
+    <Route path="/login" component={SignInPage}/><Route path="/signup" component={SignUpPage}/><Route path="/forgot-password" component={ForgotPasswordPage}/>
+    <Route path="/explore" component={ExploreComplete}/><Route path="/trending" component={Trending}/><Route path="/creators" component={CreatorsComplete}/>
+    <Route path="/creator/:id" component={CreatorProfile}/><Route path="/artwork/:id" component={ArtworkDetail}/>
+    <Route path="/upload" component={()=><ProtectedPage creatorOnly><UploadComplete/></ProtectedPage>}/>
+    <Route path="/dashboard" component={()=><ProtectedPage creatorOnly><DashboardComplete/></ProtectedPage>}/>
+    <Route path="/commissions" component={()=><ProtectedPage><Commissions/></ProtectedPage>}/>
+    <Route path="/collaborate" component={()=><ProtectedPage><Collaborate/></ProtectedPage>}/>
+    <Route path="/messages" component={()=><ProtectedPage><Messages/></ProtectedPage>}/>
+    <Route path="/wishlist" component={()=><ProtectedPage><Wishlist/></ProtectedPage>}/>
+    <Route path="/cart" component={()=><ProtectedPage><Cart/></ProtectedPage>}/>
+    <Route path="/checkout" component={()=><ProtectedPage><Checkout/></ProtectedPage>}/>
+    <Route path="/order-success" component={()=><ProtectedPage><OrderSuccess/></ProtectedPage>}/>
+    <Route path="/portfolio" component={()=><ProtectedPage creatorOnly><PortfolioComplete/></ProtectedPage>}/>
+    <Route path="/leaderboard" component={LeaderboardComplete}/>
+    <Route path="/notifications" component={()=><ProtectedPage><Notifications/></ProtectedPage>}/>
+    <Route path="/settings" component={()=><ProtectedPage><SettingsPage/></ProtectedPage>}/>
+    <Route component={NotFoundPage}/>
+  </Switch></AppShell>;
+}
+
+function normalizeArtwork(value:any):Art{
+  const image=String(value?.image||value?.imageUrl||'');
+  return {id:String(value?.id||value?._id||''),title:String(value?.title||''),creatorId:String(value?.creatorId||''),category:String(value?.category||''),style:String(value?.style||''),price:Number(value?.price||0),likes:Number(value?.likes||0),saves:Number(value?.saves||0),views:Number(value?.views||0),rating:Number(value?.rating||0),image,description:String(value?.description||''),tags:Array.isArray(value?.tags)?value.tags:[],created:Number(value?.created||new Date(value?.createdAt||Date.now()).getTime()),rank:value?.rank};
+}
+function replaceCreatorCache(values:any[]){
+  if(!Array.isArray(values)||!values.length)return;
+  const mapped:Creator[]=values.map(value=>({id:String(value.id||value._id),name:String(value.name||'ARTNEST creator'),initials:String(value.initials||'AN'),college:String(value.college||''),location:String(value.location||''),bio:String(value.bio||''),followers:Number(value.followers||0),works:Number(value.works||0),rating:Number(value.rating||0),skills:Array.isArray(value.skills)?value.skills:[]}));
+  creators.splice(0,creators.length,...mapped);
+}
+function MarketplaceApp(){
+  const auth=useAuth();
+  const [,setLocation]=useLocation();
+  const [arts,setArts]=useState<Art[]>([]);
+  const [wishlist,setWishlist]=useState<string[]>([]);
+  const [cart,setCart]=useState<string[]>([]);
+  const [liked,setLiked]=useState<string[]>([]);
+  const [following,setFollowing]=useState<string[]>([]);
+  const [dashboard,setDashboard]=useState<any>(null);
+  const [dashboardLoading,setDashboardLoading]=useState(false);
+  const [loading,setLoading]=useState(true);
+  const [apiError,setApiError]=useState('');
+  const [toastText,setToastText]=useState('');
+
+  const toast=useCallback((message:string)=>{setToastText(message);window.setTimeout(()=>setToastText(''),3000)},[]);
+  const refreshArts=useCallback(async()=>{
+    setLoading(true);
+    try{
+      const [artResult,creatorResult]=await Promise.all([
+        apiRequest<{artworks:any[]}>('/artworks'),
+        apiRequest<{creators:any[]}>('/creators'),
+      ]);
+      setArts((artResult.artworks||[]).map(normalizeArtwork));
+      replaceCreatorCache(creatorResult.creators||[]);
+      setApiError('');
+    }catch(error){
+      setApiError(error instanceof Error?error.message:'The marketplace could not load.');
+    }finally{setLoading(false)}
+  },[]);
+  const refreshPrivate=useCallback(async()=>{
+    if(!auth.session||auth.loading){setWishlist([]);setCart([]);setLiked([]);setFollowing([]);return}
+    const token=await auth.getIdToken();
+    if(!token)return;
+    try{
+      const [saved,cartResult,likeResult,followResult]=await Promise.all([
+        apiRequest<{artworkIds:string[]}>('/wishlist',{},token),
+        apiRequest<{items:{artworkId:string}[]}>('/cart',{},token),
+        apiRequest<{artworkIds:string[]}>('/likes',{},token),
+        apiRequest<{creatorIds:string[]}>('/following',{},token),
+      ]);
+      setWishlist(saved.artworkIds||[]);
+      setCart((cartResult.items||[]).map(item=>item.artworkId));
+      setLiked(likeResult.artworkIds||[]);
+      setFollowing(followResult.creatorIds||[]);
+    }catch(error){toast(error instanceof Error?error.message:'Could not sync your saved work.')}
+  },[auth.getIdToken,auth.loading,auth.session,toast]);
+  const refreshDashboard=useCallback(async()=>{
+    if(!auth.session)return;
+    setDashboardLoading(true);
+    try{
+      const token=await auth.getIdToken();
+      if(!token)return;
+      const result=await apiRequest<any>('/dashboard',{},token);
+      setDashboard(result);
+    }catch(error){toast(error instanceof Error?error.message:'Could not load dashboard data.')}
+    finally{setDashboardLoading(false)}
+  },[auth.getIdToken,auth.session,toast]);
+  useEffect(()=>{void refreshArts()},[refreshArts]);
+  useEffect(()=>{void refreshPrivate()},[refreshPrivate]);
+  useEffect(()=>{if(auth.session&&auth.profile?.role==='student_creator')void refreshDashboard()},[auth.session,auth.profile?.role,refreshDashboard]);
+
+  const tokenOrLogin=useCallback(async()=>{
+    if(!auth.session){toast('Sign in to save your work and use your account.');setLocation(`/login?next=${encodeURIComponent(window.location.pathname)}`);return null}
+    try{return await auth.getIdToken()}catch(error){toast(error instanceof Error?error.message:'Sign in again to continue.');return null}
+  },[auth.getIdToken,auth.session,setLocation,toast]);
+  const toggleSave=useCallback(async(id:string)=>{
+    const token=await tokenOrLogin();if(!token)return;
+    const exists=wishlist.includes(id);
+    try{
+      await apiRequest(`/wishlist/${encodeURIComponent(id)}`,{method:exists?'DELETE':'POST'},token);
+      setWishlist(previous=>exists?previous.filter(value=>value!==id):[...previous,id]);
+      toast(exists?'Removed from saved artwork':'Saved to your wishlist');
+    }catch(error){toast(error instanceof Error?error.message:'Could not update your wishlist.')}
+  },[tokenOrLogin,wishlist,toast]);
+  const toggleLike=useCallback(async(id:string)=>{
+    const token=await tokenOrLogin();if(!token)return;
+    try{
+      const result=await apiRequest<{liked:boolean;likes:number}>(`/artworks/${encodeURIComponent(id)}/like`,{method:'POST'},token);
+      setLiked(previous=>result.liked?[...new Set([...previous,id])]:previous.filter(value=>value!==id));
+      setArts(previous=>previous.map(art=>art.id===id?{...art,likes:result.likes}:art));
+    }catch(error){toast(error instanceof Error?error.message:'Could not update the like.')}
+  },[tokenOrLogin,toast]);
+  const addCart=useCallback(async(id:string)=>{
+    const token=await tokenOrLogin();if(!token)return;
+    if(cart.includes(id)){toast('This piece is already in your cart.');return}
+    try{
+      await apiRequest('/cart',{method:'POST',body:jsonBody({artworkId:id,quantity:1})},token);
+      setCart(previous=>previous.includes(id)?previous:[...previous,id]);
+      toast('Added to your cart.');
+    }catch(error){toast(error instanceof Error?error.message:'Could not add this artwork to your cart.')}
+  },[cart,tokenOrLogin,toast]);
+  const removeCart=useCallback(async(id:string)=>{
+    const token=await tokenOrLogin();if(!token)return;
+    try{await apiRequest(`/cart/${encodeURIComponent(id)}`,{method:'DELETE'},token);setCart(previous=>previous.filter(value=>value!==id))}
+    catch(error){toast(error instanceof Error?error.message:'Could not remove that item.')}
+  },[tokenOrLogin,toast]);
+  const clearCart=useCallback(async()=>{
+    const token=await tokenOrLogin();if(!token)return;
+    try{await apiRequest('/cart',{method:'DELETE'},token);setCart([])}
+    catch(error){toast(error instanceof Error?error.message:'Could not clear your cart.')}
+  },[tokenOrLogin,toast]);
+  const publishArt=useCallback(async(art:Art,status:'DRAFT'|'PUBLISHED'='PUBLISHED',file?:File):Promise<Art|null>=>{
+    const token=await tokenOrLogin();if(!token)return null;
+    try{
+      const form=new FormData();
+      if(file)form.append('image',file,file.name);
+      else{
+        const imageResponse=await fetch(art.image);
+        if(!imageResponse.ok)throw new Error('Choose an artwork image before publishing.');
+        const blob=await imageResponse.blob();
+        if(!blob.type.startsWith('image/'))throw new Error('The selected artwork is not an image.');
+        form.append('image',blob,'artwork-upload');
+      }
+      form.append('title',art.title);
+      form.append('description',art.description);
+      form.append('category',art.category);
+      form.append('style',art.style);
+      form.append('price',String(art.price));
+      form.append('tags',art.tags.join(','));
+      form.append('status',status);
+      const result=await apiRequest<{artwork:any}>('/artworks',{method:'POST',body:form},token);
+      const next=normalizeArtwork(result.artwork);
+      setArts(previous=>[next,...previous]);
+      toast(status==='DRAFT'?'Draft saved to your account.':'Your artwork is live in the marketplace.');
+      return next;
+    }catch(error){toast(error instanceof Error?error.message:'Could not save your artwork.');return null}
+  },[tokenOrLogin,toast]);
+  const toggleFollow=useCallback(async(id:string)=>{
+    const token=await tokenOrLogin();if(!token)return;
+    try{
+      const result=await apiRequest<{following:boolean}>(`/creators/${encodeURIComponent(id)}/follow`,{method:'POST'},token);
+      setFollowing(previous=>result.following?[...new Set([...previous,id])]:previous.filter(value=>value!==id));
+      toast(result.following?'You are now following this creator':'Creator unfollowed');
+    }catch(error){toast(error instanceof Error?error.message:'Could not update your follows.')}
+  },[tokenOrLogin,toast]);
+  const value=useMemo<AppState>(()=>({arts,wishlist,cart,liked,following,loading,apiError,dashboard,dashboardLoading,toast,refreshArts,refreshPrivate,refreshDashboard,toggleSave,toggleLike,addCart,removeCart,clearCart,publishArt,toggleFollow}),[arts,wishlist,cart,liked,following,loading,apiError,dashboard,dashboardLoading,toast,refreshArts,refreshPrivate,refreshDashboard,toggleSave,toggleLike,addCart,removeCart,clearCart,publishArt,toggleFollow]);
+  return <DataContext.Provider value={value}><ErrorBoundary><RouteSet/></ErrorBoundary>{toastText&&<div className="toast" role="status" data-testid="status-toast">{toastText}</div>}</DataContext.Provider>;
+}
+
+function App(){
+  return <QueryClientProvider client={queryClient}><AuthProvider><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/,'')}><MarketplaceApp/></WouterRouter><Toaster/></TooltipProvider></AuthProvider></QueryClientProvider>;
+}
 export default App;
